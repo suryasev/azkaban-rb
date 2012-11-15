@@ -81,6 +81,7 @@ module Azkaban
 
     @default_jvm_args = {}
     @output_dir = "conf/"
+    @inline_dir = "src/inline_pig/"
 
     def initialize(task, ext)
       task.job = self
@@ -94,6 +95,7 @@ module Azkaban
 
     class << self
       attr_accessor :output_dir
+      attr_accessor :inline_dir
       attr_accessor :default_jvm_args
     end
     
@@ -207,6 +209,21 @@ module Azkaban
     def uses(name)
       @uses_arg = name
       set "pig.script"=>name
+    end
+
+    def inline_script(code)
+      @inline_script = code
+      uses Azkaban::JobFile.inline_dir + @task.name.gsub(":", "_").gsub("-", "_")  + '.pig'
+      generate_inline_script
+    end
+
+    def generate_inline_script
+      unless File.exists? Azkaban::JobFile.inline_dir
+        Dir.mkdir Azkaban::JobFile.inline_dir
+      end
+      file = File.new(Azkaban::JobFile.inline_dir + @task.name.gsub(":", "_").gsub("-", "_") + '.pig', "w+")
+      file.write(@inline_script)
+      file.close
     end
     
     def parameter(params)
